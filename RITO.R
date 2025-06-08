@@ -1,7 +1,6 @@
 ###### This code summarizes the functions and variables used in the RITO algorithm, taking the SSALT of
 ###### single stress voltage as an example, and provides comments on the main steps. You can adjust the 
 ###### corresponding parameters and environment according to your own needs.
-
 ##### The parameter initialization for ALT of Voltage
 #### We have 3 groups
 alpha=4
@@ -13,9 +12,10 @@ x3=log(120)
 theta1=exp(beta0+x1*beta1)
 theta2=exp(beta0+x2*beta1)
 theta3=exp(beta0+x3*beta1)
+Ni=20
 
 ##### The decomposed trace function for Weibull CSALT
-TR=function(t,theta,alpha,Ni,x){
+TR=function(t,theta,alpha,x){
   ### t: inspection times
   ### theta: scale paramter
   ### Ni: number of unit
@@ -43,7 +43,7 @@ TR=function(t,theta,alpha,Ni,x){
 }
 
 ##### The decomposed trace function (conditional on the past inspections) for Weibull CSALT
-TR_conditional=function(t_past,t_fu,theta,alpha,Ni,x){
+TR_conditional=function(t_past,t_fu,theta,alpha,x){
   ### t_past: the past inspection time
   ### t_fu: the future inspection time
   n=length(t_past)+length(t_fu)
@@ -71,7 +71,7 @@ TR_conditional=function(t_past,t_fu,theta,alpha,Ni,x){
 }
 
 ##### We can optimize the future inspections conditional on the past inspections with the paramters. like
-optim(c(1500,2000), TR_conditional, x=x3,theta=theta3,t_past=c(500,1000,1200),Ni=10,method = "BFGS")
+optim(c(1500,2000), TR_conditional, x=x3,theta=theta3,t_past=c(500,1000,1200),method = "BFGS")
 ### With the trace decomposition, it it easy to use the unconstrained optimization solver optim()
 
 ##### The Weibull likelihood function for interval censoring
@@ -89,7 +89,6 @@ Weibull_likelihood_interval=function(parameter,num_of_failure,check_time){
   theta=c(theta1,theta2,theta3)
   m=dim(num_of_failure)[1]
   n=dim(num_of_failure)[2]
-  
   p=matrix(0,m,n)
   for (i in 1:m) {
     F=0
@@ -106,14 +105,12 @@ Weibull_likelihood_interval=function(parameter,num_of_failure,check_time){
   return(-logL)
 }
 
-
 ##### An example for Weibull MLE
 check_time=matrix(c(1000,1500,5000,1000,1500,3000,1000,1500,2000),3,3,byrow=T)
 num_of_failure=matrix(c(0,1,16,3,0,3,15,2,3,8,8,1),3,4,byrow=T)
 check_time=matrix(c(1000,1500,1000,1500,1000,1500),3,2,byrow=T)
 num_of_failure=matrix(c(0,1,19,0,2,18,3,8,9),3,3,byrow=T)
 optim(c(3.5,20,-2),Weibull_likelihood_interval,num_of_failure=num_of_failure,check_time=check_time,method = "BFGS")
-
 
 ##### Function to find the next inspection time
 nonzerominposition=function(matrix){
@@ -123,7 +120,6 @@ nonzerominposition=function(matrix){
   position=which(matrix ==min_non_zero, arr.ind = TRUE)
   return(position)
 }
-
 
 theta=c(theta1,theta2,theta3)
 x=c(x1,x2,x3)
@@ -207,6 +203,13 @@ vol_trace_simulation=function(theta,x,alpha,num_in_group,num_of_inspection){
   return(c(para_est,para_fix,tr))
 }
 
+##### We can try a simulation like below
+set.seed(999)
+num_in_group=20
+vol_trace_simulation(theta=theta,x=x,alpha=4,num_in_group=20,num_of_inspection=6)
+##### We have the following outcome
+### [1]     4.068165    21.033252    -2.871754     4.933873    19.374498    -2.523628 19287.048608
+
 ##### Calculation for the information function
 Group_information_matrix=function(t,theta,alpha,x,Ni){
   n=length(t)
@@ -251,5 +254,3 @@ DET=function(t,theta,alpha,x){
   }
   return(det(information))
 }
-
-
